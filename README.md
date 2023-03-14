@@ -38,8 +38,9 @@ docker build -t buildozer .
 ```
 docker run buildozer --version
 ```
-8. Run this command to build an Android app from the `src` directory. This will take around ~30 minutes the first time but will be faster on subsequent runs. This command will store the SDK, NDK, and other libraries that Buildozer requires in the `cache` folder.
+8. Run the following commands to create a `cache` folder and build an Android app from the `src` directory. This will take around ~30 minutes the first time but will be faster on subsequent runs. This command will store the SDK, NDK, and other libraries that Buildozer requires in the `cache` folder.
 ```
+mkdir cache
 docker run -v $(pwd)/cache:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
 ```
 9. You can replace `android debug` with any other options that `buildozer` accepts, such as `android clean`.
