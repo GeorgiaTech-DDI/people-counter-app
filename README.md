@@ -27,7 +27,7 @@ push:
 ### Windows
 1. Install WSL and Ubuntu using [this guide](https://learn.microsoft.com/en-us/windows/wsl/install).
 2. Install Docker Desktop using [this guide](https://docs.docker.com/desktop/install/windows-install/).
-3. Open the `Ubuntu on Windows` app from the Start Menu.
+3. Open the `Ubuntu` app from the Start Menu.
 4. Inside the Ubuntu terminal, clone this repository, and navigate to the new directory.
 5. Make sure Docker Desktop is running. If not, open it from the Start Menu.
 6. Run this command in the repository folder. There should be a `Dockerfile` in the directory. This command builds a Docker image from the `Dockerfile`.
