@@ -1,9 +1,15 @@
-# Installing Kivy
+# People Counter App
+
+## **Task Board**
+## Join the Trello at [this link](https://trello.com/invite/b/FXZQRIFY/ATTI4be1d9e37624f00442f8c742c447cac9D96B85AB/people-counter-app) to see and complete your assigned tasks!
+
+# Documentation
+## Installing Kivy
 Install Kivy: https://kivy.org/doc/stable/gettingstarted/installation.html 
   (You will need python in the same location)
 
-# Building the app on GitHub Actions
-## On development branches
+## Building the app on GitHub Actions
+### On development branches
 1. Create a new branch to use for development.
 2. If you want to run builds on that branch every push, edit this part of the `.github/workflows/main.yml` file to include the name of your new branch. Make sure to commit your changes.
 ```
@@ -14,11 +20,11 @@ push:
 ```
 3. Now, every time you push to the branch, it will start a new build. Each build will take around ~20 mins. If it is successful, an artifact named `package.zip` will be uploaded to the build page. Inside is an `.apk` file that you can install on an Android phone or emulator.
 
-## On `main` branch
+### On `main` branch
 1. When you have tested the app on your development branch, you can create a pull request to the `main` branch. This pull request has to approved by another person before it is merged.
 
-# Building the app locally
-## Windows
+## Building the app locally
+### Windows
 1. Install WSL and Ubuntu using [this guide](https://learn.microsoft.com/en-us/windows/wsl/install).
 2. Install Docker Desktop using [this guide](https://docs.docker.com/desktop/install/windows-install/).
 3. Open the `Ubuntu on Windows` app from the Start Menu.
@@ -42,10 +48,13 @@ docker run -v $(pwd)/buildozer:/home/user/.buildozer -v $(pwd)/src:/home/user/ho
 docker run -v $(pwd)/buildozer:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
 ```
 
-# Testing the app on Android emulator
+## Testing the app on Android emulator
 If you have an Android device, you can download the `.apk` file onto it and install it directly. Otherwise, you can use the emulator provided by Android Studio to run the app.
 1. Install Android Studio using [this guide](https://developer.android.com/studio/install).
 2. Open Android Studio. Click on `More Actions` and then `Virtual Device Manager`.
 3. Create a new device. Select `Pixel 3` for the device definition and `R` for the system image.
 4. Start the device once it's created, and power it on.
 5. Drag and drop your `.apk` file onto the emulator. It should start installing automatically.
+
+# Resources
+TODO
