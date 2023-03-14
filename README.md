@@ -38,7 +38,7 @@ docker build -t buildozer .
 ```
 docker run buildozer --version
 ```
-8. Run the following commands to create a `cache` folder and build an Android app from the `src` directory. This will take around ~30 minutes the first time but will be faster on subsequent runs. This command will store the SDK, NDK, and other libraries that Buildozer requires in the `~/.buildozer` folder.
+8. Run the following commands to create a `~/.buildozer` folder and build an Android app from the `src` directory. This will take around ~30 minutes the first time but will be faster on subsequent runs. This command will store the SDK, NDK, and other libraries that Buildozer requires in the `~/.buildozer` folder.
 ```
 mkdir ~/.buildozer
 docker run -v "$HOME/.buildozer":/home/user/.buildozer -v "$PWD/src":/home/user/hostcwd buildozer android debug
@@ -58,7 +58,7 @@ If you have an Android device, you can download the `.apk` file onto it and inst
 
 # Troubleshooting
 ## Error: `PermissionError: [Errno 13] Permission denied: '/home/user/.buildozer/cache'`
-Run the following commands in the repository directory to remove and recreate the `cache` folder.
+Run the following command to remove and recreate the `~/.buildozer` folder.
 ```
 rm -rf ~/.buildozer && mkdir ~/.buildozer
 ```
@@ -67,6 +67,13 @@ rm -rf ~/.buildozer && mkdir ~/.buildozer
 Make sure the following line is in your `buildozer.spec` file.
 ```
 android.accept_sdk_license = True
+```
+
+## Error: `Build failed: Requested API target 31 is not available, install it with the SDK android tool.`
+Run the following commands in the repository directory to remove all `.buildozer` folders.
+```
+rm -rf ~/.buildozer && mkdir ~/.buildozer
+rm -rf ./src/.buildozer
 ```
 # Resources
 TODO
