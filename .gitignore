@@ -243,5 +243,5 @@ Temporary Items
 
 # End of https://www.toptal.com/developers/gitignore/api/macos
 
-# Used to store Buildozer required libraries
-cache/*
+# Buildozer
+*/.buildozer/*
