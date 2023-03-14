@@ -245,3 +245,4 @@ Temporary Items
 
 # Buildozer
 */.buildozer/*
+*/bin/*
