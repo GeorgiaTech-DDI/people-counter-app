@@ -40,12 +40,12 @@ docker run buildozer --version
 ```
 8. Run this command to build an Android app from the `src` directory. This will take around ~30 minutes the first time but will be faster on subsequent runs. This command will store the SDK, NDK, and other libraries that Buildozer requires in the `cache` folder.
 ```
-docker run -v $(pwd)/buildozer:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
+docker run -v $(pwd)/cache:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
 ```
 9. You can replace `android debug` with any other options that `buildozer` accepts, such as `android clean`.
 10. On subsequent app builds, you can open the Ubuntu terminal, navigate to the `people-counter-app` directory, and run this command while Docker Desktop is running. The previous steps are not necessary.
 ```
-docker run -v $(pwd)/buildozer:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
+docker run -v $(pwd)/cache:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
 ```
 
 ## Testing the app on Android emulator
