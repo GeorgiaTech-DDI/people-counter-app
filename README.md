@@ -38,17 +38,16 @@ docker build -t buildozer .
 ```
 docker run buildozer --version
 ```
-8. Run the following commands to create a `cache` folder and build an Android app from the `src` directory. This will take around ~30 minutes the first time but will be faster on subsequent runs. This command will store the SDK, NDK, and other libraries that Buildozer requires in the `cache` folder.
+8. Run the following commands to create a `cache` folder and build an Android app from the `src` directory. This will take around ~30 minutes the first time but will be faster on subsequent runs. This command will store the SDK, NDK, and other libraries that Buildozer requires in the `~/.buildozer` folder.
 ```
-mkdir cache
-docker run -v $(pwd)/cache:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
+mkdir ~/.buildozer
+docker run -v "$HOME/.buildozer":/home/user/.buildozer -v "$PWD/src":/home/user/hostcwd buildozer android debug
 ```
 9. You can replace `android debug` with any other options that `buildozer` accepts, such as `android clean`.
 10. On subsequent app builds, you can open the Ubuntu terminal, navigate to the `people-counter-app` directory, and run this command while Docker Desktop is running. The previous steps are not necessary.
 ```
-docker run -v $(pwd)/cache:/home/user/.buildozer -v $(pwd)/src:/home/user/hostcwd buildozer android debug
+docker run -v "$HOME/.buildozer":/home/user/.buildozer -v "$PWD/src":/home/user/hostcwd buildozer android debug
 ```
-
 ## Testing the app on Android emulator
 If you have an Android device, you can download the `.apk` file onto it and install it directly. Otherwise, you can use the emulator provided by Android Studio to run the app.
 1. Install Android Studio using [this guide](https://developer.android.com/studio/install).
@@ -57,5 +56,17 @@ If you have an Android device, you can download the `.apk` file onto it and inst
 4. Start the device once it's created, and power it on.
 5. Drag and drop your `.apk` file onto the emulator. It should start installing automatically.
 
+# Troubleshooting
+## Error: `PermissionError: [Errno 13] Permission denied: '/home/user/.buildozer/cache'`
+Run the following commands in the repository directory to remove and recreate the `cache` folder.
+```
+rm -rf ~/.buildozer && mkdir ~/.buildozer
+```
+
+## Error: `Aidl not found, please install it.`
+Make sure the following line is in your `buildozer.spec` file.
+```
+android.accept_sdk_license = True
+```
 # Resources
 TODO
