@@ -1,85 +1,51 @@
 from kivy.app import App
+from kivy.uix.camera import Camera
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.image import Image
-from kivy.uix.switch import Switch
-from kivy.config import Config
-
-Config.set('graphics', 'resizable', True)
-
-# Google Pixel Viewport
-# Config.set('graphics', 'width', '412')
-# Config.set('graphics', 'height', '732')
-
-# start button
-# counter
-class home(GridLayout):
-    def __init__(self, **kwargs):
-        super(home, self).__init__(**kwargs)
-        self.cols = 1
-        self.padding = '30sp'
-        self.add_widget(Label(text="Welcome to People Counter",
-                              size_hint_y=None,
-                              height=50, 
-                              font_size='50sp'))
-        
-        self.add_widget(Label(text="Invention Studio",
-                              size_hint_y=None,
-                              height=50, 
-                              font_size='30sp'))
-        
-        self.image = Image(source='library_people_img.jpg',
-                           width=150,
-                           height=150)
-        self.add_widget(self.image)
-
-        self.add_widget(Label(text="Number of People Currently:",
-                              size_hint_y=None,
-                              height=50, 
-                              font_size='30sp'))
-        
-        self.num_people = Label(text="3",
-                              size_hint_y=None,
-                              height=50, 
-                              font_size='50sp')
-        self.add_widget(self.num_people)
-
-        self.add_widget(Label(text="Average Number of People:",
-                              size_hint_y=None,
-                              height=50, 
-                              font_size='30sp'))
-        
-        self.avg_people = Label(text="4",
-                              size_hint_y=None,
-                              height=50, 
-                              font_size='50sp')
-        self.add_widget(self.avg_people)
-        
-        self.switch = Switch()
-        self.add_widget(self.switch)
 
 
+class CameraExample(App):
 
-        # self.top_grid.add_widget(Label(text=" ", 
-		# 	font_size=32,
-		# 	size_hint_y = None,
-		# 	height=50,
-		# 	size_hint_x = None,
-		# 	width=200
-		# ))
-
-
-    # def press(self, instance):
-       
-       
-
-
-class MyApp(App):
     def build(self):
-        return home()
+        layout = BoxLayout(orientation='vertical')
+
+        # Create a camera object
+
+        self.cameraObject = Camera(play=False)
+
+        self.cameraObject.play = True
+
+        self.cameraObject.resolution = (300, 300)  # Specify the resolution
+
+        # Create a button for taking photograph
+
+        self.camaraClick = Button(text="Take Photo")
+
+        self.camaraClick.size_hint = (.5, .2)
+
+        self.camaraClick.pos_hint = {'x': .25, 'y': .75}
+
+        # bind the button's on_press to onCameraClick
+
+        self.camaraClick.bind(on_press=self.onCameraClick)
+
+        # add camera and button to the layout
+
+        layout.add_widget(self.cameraObject)
+
+        layout.add_widget(self.camaraClick)
+
+        # return the root widget
+
+        return layout
+
+    # Take the current frame of the video as the photo graph
+
+    def onCameraClick(self, *args):
+        self.cameraObject.export_to_png('/kivyexamples/selfie.png')
 
 
-if __name__ == "__main__":
-    MyApp().run()
+# Start the Camera App
+
+if __name__ == '__main__':
+    CameraExample().run()
