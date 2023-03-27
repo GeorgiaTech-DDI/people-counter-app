@@ -1,51 +1,47 @@
+import os
+
+import kivy
+
+kivy.require('1.8.0')
+
 from kivy.app import App
-from kivy.uix.camera import Camera
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.popup import Popup
+
+from plyer import camera
 
 
-class CameraExample(App):
+class CameraDemo(FloatLayout):
+    def __init__(self):
+        super(CameraDemo, self).__init__()
+        self.cwd = os.getcwd() + "/"
+        self.ids.path_label.text = self.cwd
 
+    def do_capture(self):
+        try:
+
+            filepath = self.cwd + self.ids.filename_text.text
+            camera.take_picture(filename=filepath,
+                                on_complete=self.camera_callback)
+        except NotImplementedError:
+            popup = MsgPopup(msg="This feature has not yet been implemented for this platform.")
+            popup.open()
+
+    def camera_callback(self, **kwargs):
+        return False
+
+
+class CameraDemoApp(App):
     def build(self):
-        layout = BoxLayout(orientation='vertical')
-
-        # Create a camera object
-
-        self.cameraObject = Camera(play=False)
-
-        self.cameraObject.play = True
-
-        self.cameraObject.resolution = (300, 300)  # Specify the resolution
-
-        # Create a button for taking photograph
-
-        self.camaraClick = Button(text="Take Photo")
-
-        self.camaraClick.size_hint = (.5, .2)
-
-        self.camaraClick.pos_hint = {'x': .25, 'y': .75}
-
-        # bind the button's on_press to onCameraClick
-
-        self.camaraClick.bind(on_press=self.onCameraClick)
-
-        # add camera and button to the layout
-
-        layout.add_widget(self.cameraObject)
-
-        layout.add_widget(self.camaraClick)
-
-        # return the root widget
-
-        return layout
-
-    # Take the current frame of the video as the photo graph
-
-    def onCameraClick(self, *args):
-        self.cameraObject.export_to_png('/kivyexamples/selfie.png')
+        return CameraDemo()
 
 
-# Start the Camera App
+class MsgPopup(Popup):
+    def __init__(self, msg):
+        super(MsgPopup, self).__init__()
+
+        self.ids.message_label.text = msg
+
 
 if __name__ == '__main__':
-    CameraExample().run()
+    CameraDemoApp().run()
