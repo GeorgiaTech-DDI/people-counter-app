@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Test App</string>
-    <string name="pick_image">Pick image</string>
-    <string name="image">Image picked by user</string>
+    <string name="app_name">People Counter</string>
+    <string name="pick_image_button">Pick image</string>
+    <string name="imageview">Image chosen by the user</string>
 </resources>

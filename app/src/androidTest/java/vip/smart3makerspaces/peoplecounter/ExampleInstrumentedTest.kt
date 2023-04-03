@@ -1,4 +1,4 @@
-package vip.smart3makerspaces.testapp
+package vip.smart3makerspaces.peoplecounter
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("vip.smart3makerspaces.testapp", appContext.packageName)
+        assertEquals("vip.smart3makerspaces.peoplecounter", appContext.packageName)
     }
 }

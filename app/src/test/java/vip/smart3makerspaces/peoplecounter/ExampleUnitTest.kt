@@ -1,4 +1,4 @@
-package vip.smart3makerspaces.testapp
+package vip.smart3makerspaces.peoplecounter
 
 import org.junit.Test
 
