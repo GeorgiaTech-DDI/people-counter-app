@@ -66,10 +66,6 @@ class MainActivity : AppCompatActivity() {
             if (uri != null) {
                 Log.d(TAG, "Selected media with URI: $uri")
 
-                // Set imageView to the selected image's URI
-                findViewById<ImageView>(R.id.imageView)
-                    .setImageURI(uri)
-
                 lateinit var tempFile: File
                 lateinit var compressedBitmap: Bitmap
 
@@ -116,6 +112,10 @@ class MainActivity : AppCompatActivity() {
                 lifecycleScope.launch(Dispatchers.Main) {
                     // Wait for file compression to complete
                     compressFileJob.join()
+
+                    // Set imageView to the selected image's URI
+                    findViewById<ImageView>(R.id.imageView)
+                        .setImageBitmap(compressedBitmap)
 
                     // Detect labels in the bitmap
                     detectLabels(compressedBitmap)
