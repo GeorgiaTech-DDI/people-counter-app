@@ -3,7 +3,6 @@ package vip.smart3makerspaces.peoplecounter
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.method.ScrollingMovementMethod
@@ -13,12 +12,24 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import com.amplifyframework.AmplifyException
 import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
 import com.amplifyframework.core.Amplify
 import com.amplifyframework.predictions.aws.AWSPredictionsPlugin
 import com.amplifyframework.predictions.models.IdentifyActionType
 import com.amplifyframework.predictions.result.IdentifyLabelsResult
+import id.zelory.compressor.Compressor
+import id.zelory.compressor.constraint.default
+import id.zelory.compressor.constraint.size
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.io.File
+import java.io.FileOutputStream
+import java.util.*
 
 private const val TAG = "MainActivity"
 
@@ -59,17 +70,60 @@ class MainActivity : AppCompatActivity() {
                 findViewById<ImageView>(R.id.imageView)
                     .setImageURI(uri)
 
-                // Create a bitmap using selected image
-                val bitmap: Bitmap = if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(contentResolver, uri)
-                } else {
-                    ImageDecoder.decodeBitmap(
-                        ImageDecoder.createSource(contentResolver, uri)
+                lateinit var tempFile: File
+                lateinit var compressedBitmap: Bitmap
+
+                // Perform resource-intensive work in IO thread
+                val compressFileJob = lifecycleScope.launch(Dispatchers.IO) {
+                    // Create a temp file from the selected image
+                    val uriInputStream = contentResolver.openInputStream(uri)
+                    tempFile = File.createTempFile(
+                        UUID.randomUUID().toString(),
+                        "",
+                        this@MainActivity.cacheDir
                     )
+                    Log.i(TAG, "Created temp file: ${tempFile.path}")
+                    val fileOutputStream = FileOutputStream(tempFile)
+                    uriInputStream?.copyTo(fileOutputStream)
+                    uriInputStream?.close()
+                    fileOutputStream.close()
+                    Log.i(TAG, "Original file size in bytes: ${tempFile.length()}")
+
+                    // Compress the file to AWS Rekognition size limits (5MB)
+                    val compressedFile = Compressor.compress(
+                        this@MainActivity,
+                        tempFile
+                    ) {
+                        default()
+                        size(5_242_880)
+                    }
+                    Log.i(TAG, "Compressed file size in bytes: ${compressedFile.length()}")
+
+                    // Create a bitmap using compressed image
+                    if (Build.VERSION.SDK_INT < 28) {
+                        compressedBitmap = MediaStore.Images.Media.getBitmap(
+                            contentResolver,
+                            compressedFile.toUri()
+                        )
+                    } else {
+                        compressedBitmap = ImageDecoder.decodeBitmap(
+                            ImageDecoder.createSource(
+                                contentResolver, compressedFile.toUri())
+                        )
+                    }
                 }
 
-                // Detect labels in the bitmap
-                detectLabels(bitmap)
+                lifecycleScope.launch(Dispatchers.Main) {
+                    // Wait for file compression to complete
+                    compressFileJob.join()
+
+                    // Detect labels in the bitmap
+                    detectLabels(compressedBitmap)
+
+                    // Delete temp file
+                    tempFile.delete()
+                }
+
             } else {
                 Log.d(TAG, "No media selected")
             }

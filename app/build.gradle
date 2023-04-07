@@ -37,7 +37,7 @@ android {
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.core:core-ktx:1.10.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
@@ -46,9 +46,12 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.7.0'
 
     // AWS Amplify dependencies
-    implementation 'com.amplifyframework:core:2.6.0'
-    implementation 'com.amplifyframework:aws-predictions:2.6.0'
-    implementation 'com.amplifyframework:aws-auth-cognito:2.6.0'
+    implementation 'com.amplifyframework:core:2.7.0'
+    implementation 'com.amplifyframework:aws-predictions:2.7.0'
+    implementation 'com.amplifyframework:aws-auth-cognito:2.7.0'
+
+    // Image compression library
+    implementation 'id.zelory:compressor:3.0.1'
 
     // Support for Java 8 features
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.2'
