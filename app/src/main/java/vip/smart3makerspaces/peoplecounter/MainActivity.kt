@@ -1,8 +1,19 @@
 package vip.smart3makerspaces.peoplecounter
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
+import android.net.Uri
 import android.os.Build
+import android.content.ContentUris
+import android.content.Context
+import androidx.appcompat.app.AppCompatActivity
+import android.net.Uri
+import android.os.Bundle
+import android.provider.MediaStore
+import android.util.Log
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.method.ScrollingMovementMethod
@@ -12,24 +23,15 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.net.toUri
-import androidx.lifecycle.lifecycleScope
 import com.amplifyframework.AmplifyException
 import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
 import com.amplifyframework.core.Amplify
 import com.amplifyframework.predictions.aws.AWSPredictionsPlugin
 import com.amplifyframework.predictions.models.IdentifyActionType
 import com.amplifyframework.predictions.result.IdentifyLabelsResult
-import id.zelory.compressor.Compressor
-import id.zelory.compressor.constraint.default
-import id.zelory.compressor.constraint.size
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.io.FileOutputStream
 import java.util.*
+import kotlin.collections.ArrayList
 
 private const val TAG = "MainActivity"
 
@@ -60,81 +62,65 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    private val photoPicker =
-        registerForActivityResult(PickVisualMedia())
-        { uri ->
-            if (uri != null) {
-                Log.d(TAG, "Selected media with URI: $uri")
+    // function to get image URIs
+    private fun getImageURI(): ArrayList<Uri> {
 
-                lateinit var tempFile: File
-                lateinit var compressedBitmap: Bitmap
-
-                // Perform resource-intensive work in IO thread
-                val compressFileJob = lifecycleScope.launch(Dispatchers.IO) {
-                    // Create a temp file from the selected image
-                    val uriInputStream = contentResolver.openInputStream(uri)
-                    tempFile = File.createTempFile(
-                        UUID.randomUUID().toString(),
-                        "",
-                        this@MainActivity.cacheDir
-                    )
-                    Log.i(TAG, "Created temp file: ${tempFile.path}")
-                    val fileOutputStream = FileOutputStream(tempFile)
-                    uriInputStream?.copyTo(fileOutputStream)
-                    uriInputStream?.close()
-                    fileOutputStream.close()
-                    Log.i(TAG, "Original file size in bytes: ${tempFile.length()}")
-
-                    // Compress the file to AWS Rekognition size limits (5MB)
-                    val compressedFile = Compressor.compress(
-                        this@MainActivity,
-                        tempFile
-                    ) {
-                        default()
-                        size(5_242_880)
-                    }
-                    Log.i(TAG, "Compressed file size in bytes: ${compressedFile.length()}")
-
-                    // Create a bitmap using compressed image
-                    if (Build.VERSION.SDK_INT < 28) {
-                        compressedBitmap = MediaStore.Images.Media.getBitmap(
-                            contentResolver,
-                            compressedFile.toUri()
-                        )
-                    } else {
-                        compressedBitmap = ImageDecoder.decodeBitmap(
-                            ImageDecoder.createSource(
-                                contentResolver, compressedFile.toUri())
-                        )
+        val list = ArrayList<Uri>()
+        val projection = arrayOf(MediaStore.Images.Media.DATA)
+        val mCursor = contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            null,
+            null,
+            null
+        )
+        // uses cursor object to iterate through image storage
+        mCursor.use { cursor ->
+            cursor?.let {
+                val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+                while (cursor.moveToNext()) {
+                    val imagePath = cursor.getString(columnIndex)
+                    val imageFile = File(imagePath)
+                    if (imageFile.exists()) {
+                        val imageUri = Uri.fromFile(imageFile)
+                        list.add(imageUri)
                     }
                 }
-
-                lifecycleScope.launch(Dispatchers.Main) {
-                    // Wait for file compression to complete
-                    compressFileJob.join()
-
-                    // Set imageView to the selected image's URI
-                    findViewById<ImageView>(R.id.imageView)
-                        .setImageBitmap(compressedBitmap)
-
-                    // Detect labels in the bitmap
-                    detectLabels(compressedBitmap)
-
-                    // Delete temp file
-                    tempFile.delete()
-                }
-
-            } else {
-                Log.d(TAG, "No media selected")
             }
         }
-
-    private fun pickSingleImage() {
-        photoPicker.launch(PickVisualMediaRequest(
-                PickVisualMedia.ImageOnly
-            )
-        )
+        return list
     }
+
+    private fun getBitmapFromUri() {
+        // list of image URIs
+        val list = getImageURI();
+        // loops through each uri and turns it into bitmap
+        list.forEach { item ->
+            var bitmap: Bitmap = if (Build.VERSION.SDK_INT < 28) {
+                MediaStore.Images.Media.getBitmap(contentResolver, item)
+            } else {
+                ImageDecoder.decodeBitmap(
+                    ImageDecoder.createSource(contentResolver, item)
+                )
+            }
+            // detect labels function
+            detectLabels(bitmap)
+            // deletes image after use
+            contentResolver.delete(item, null, null)
+        }
+    }
+    private fun timer() {
+        val timer = Timer()
+        val delay = 0L // Start immediately
+        val period = 5 * 60 * 1000L // 5 minutes in milliseconds
+
+        timer.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                getBitmapFromUri()
+            }
+        }, delay, period)
+    }
+
 
     private fun detectLabels(image: Bitmap) {
         Amplify.Predictions.identify(IdentifyActionType.DETECT_LABELS, image,
