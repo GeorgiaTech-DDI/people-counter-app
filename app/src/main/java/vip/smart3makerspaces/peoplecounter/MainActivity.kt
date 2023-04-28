@@ -108,12 +108,7 @@ class MainActivity : AppCompatActivity() {
         xAxis.isGranularityEnabled = true
         xAxis.valueFormatter = xAxisFormatter
         xAxis.labelRotationAngle = 300f
-        xAxis.textColor = Color.parseColor("#FFFFFF")
-
-        val yAxis = chart.axisLeft
-        yAxis.textColor = Color.parseColor("#FFFFFF")
-
-        chart.legend.textColor = Color.parseColor("#FFFFFF")
+        chart.setBackgroundColor(Color.parseColor("#FFFFFF"))
 
         // Build person count database and DAO
         db = Room.databaseBuilder(
@@ -131,7 +126,6 @@ class MainActivity : AppCompatActivity() {
             val dataSet = LineDataSet(entries, "People counted")
             val lineData = LineData(dataSet)
             chart.data = lineData
-            chart.data.setValueTextColor(Color.parseColor("#FFFFFF"))
             chart.invalidate()
             Log.i(TAG, "Updated line chart")
         }
@@ -198,6 +192,7 @@ class MainActivity : AppCompatActivity() {
                     return label.boxes.size
                 }
             }
+            return 0
         } catch (error: PredictionsException) {
             Log.e(TAG, "Label detection failed", error)
         }
