@@ -20,10 +20,13 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import com.amplifyframework.AmplifyException
 import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
-import com.amplifyframework.core.Amplify
+import com.amplifyframework.kotlin.core.Amplify
+import com.amplifyframework.predictions.PredictionsException
 import com.amplifyframework.predictions.aws.AWSPredictionsPlugin
 import com.amplifyframework.predictions.models.IdentifyActionType
 import com.amplifyframework.predictions.result.IdentifyLabelsResult
@@ -47,6 +50,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var captureTimer: Timer
     private var isCapturing = false
+    private lateinit var db: AppDatabase
+    private lateinit var personCountDao: PersonCountDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +82,18 @@ class MainActivity : AppCompatActivity() {
         } catch (error: AmplifyException) {
             Log.e(TAG, "Could not initialize Amplify", error)
         }
+
+        // Build person count database and DAO
+        db = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java, "person-count-db"
+        ).build()
+        personCountDao = db.personCountDao()
+
+        val personCountObserver = Observer<List<PersonCount>> { data ->
+            Log.i(TAG, "Person count database changed")
+        }
+        personCountDao.getAll().observe(this, personCountObserver)
     }
 
     private suspend fun compressImage(uri: Uri): Bitmap {
@@ -127,22 +144,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun detectPeople(image: Bitmap): Int {
-        var peopleDetected = -1
-        Amplify.Predictions.identify(IdentifyActionType.DETECT_LABELS, image,
-            { result ->
-                val identifyResult = result as IdentifyLabelsResult
+    private suspend fun detectPeople(image: Bitmap): Int {
+        try {
+            val result = Amplify.Predictions.identify(IdentifyActionType.DETECT_LABELS, image)
+            val identifyResult = result as IdentifyLabelsResult
 
-                for (label in identifyResult.labels) {
-                    if (label.name == "Person") {
-                        Log.i(TAG, "Detected ${label.boxes.size} person(s)")
-                        peopleDetected = label.boxes.size
-                    }
+            for (label in identifyResult.labels) {
+                // Return the number of people detected
+                if (label.name == "Person") {
+                    Log.i(TAG, "Detected ${label.boxes.size} person(s)")
+                    return label.boxes.size
                 }
-            },
-            { Log.e(TAG, "Label detection failed", it) }
-        )
-        return peopleDetected
+            }
+        } catch (error: PredictionsException) {
+            Log.e(TAG, "Label detection failed", error)
+        }
+
+        // Return -1 if error occurred during label detection
+        return -1
     }
 
     private fun togglePhotoStream() {
@@ -175,8 +194,9 @@ class MainActivity : AppCompatActivity() {
         val imageCapture = imageCapture ?: return
 
         // Create time stamped name and MediaStore entry.
+        val timestamp = System.currentTimeMillis()
         val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis())
+            .format(timestamp)
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
@@ -192,8 +212,7 @@ class MainActivity : AppCompatActivity() {
                 contentValues)
             .build()
 
-        // Set up image capture listener, which is triggered after photo has
-        // been taken
+        // Set up image capture listener, which is triggered after photo has been taken
         imageCapture.takePicture(
             outputOptions,
             ContextCompat.getMainExecutor(this),
@@ -209,8 +228,22 @@ class MainActivity : AppCompatActivity() {
                     Log.d(TAG, msg)
                     lifecycleScope.launch(Dispatchers.IO) {
                         output.savedUri?.let {
+                            // Compress captured photo
                             val compressedBitmap = compressImage(it)
-                            detectPeople(compressedBitmap)
+                            // Send photo to Rekognition to detect number of people
+                            val count = detectPeople(compressedBitmap)
+                            Log.i(TAG, "Returned $count from detectPeople")
+                            if (count != -1) {  // If detection succeeded
+                                // Add data to person count database
+                                personCountDao.insertAll(
+                                    PersonCount(
+                                        timestamp,
+                                        count
+                                    )
+                                )
+                                Log.i(TAG, "Inserted ($timestamp, $count) to database")
+                            }
+                            // Delete captured photo
                             contentResolver.delete(it, null, null)
                         }
                     }

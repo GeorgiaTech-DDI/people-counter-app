@@ -1,4 +1,5 @@
 plugins {
+    id 'kotlin-kapt'
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
@@ -38,8 +39,8 @@ android {
     }
 }
 
-dependencies {
 
+dependencies {
     implementation 'androidx.core:core-ktx:1.10.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
@@ -61,12 +62,25 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.7.1'
 
     // AWS Amplify dependencies
-    implementation 'com.amplifyframework:core:2.8.0'
+    implementation 'com.amplifyframework:core-kotlin:2.8.0'
     implementation 'com.amplifyframework:aws-predictions:2.8.0'
     implementation 'com.amplifyframework:aws-auth-cognito:2.8.0'
 
     // Image compression library
     implementation 'id.zelory:compressor:3.0.1'
+
+    // Chart and graphing library
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
+    // Room database dependencies
+    def room_version = "2.5.1"
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+
+    // Add support for LiveData
+    def lifecycle_version = "2.6.1"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
+    kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
 
     // Add support for Java 8 features
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
