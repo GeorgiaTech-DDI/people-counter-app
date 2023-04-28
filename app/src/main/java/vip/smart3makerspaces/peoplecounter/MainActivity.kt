@@ -52,6 +52,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewBinding: ActivityMainBinding
@@ -62,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var db: AppDatabase
     private lateinit var personCountDao: PersonCountDao
     private lateinit var chart: LineChart
+    private var firstTimestamp by Delegates.notNull<Long>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,20 +96,26 @@ class MainActivity : AppCompatActivity() {
         }
 
         chart = findViewById(R.id.chart)
+
+        // Disable chart description and legend for cleaner look
+        chart.description.isEnabled = false
+        chart.legend.isEnabled = false
+
         val xAxis = chart.xAxis
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.labelRotationAngle = 300f
+
+        // Convert Unix timestamp in Long to human-readable String for x-axis
         val xAxisFormatter = object : ValueFormatter() {
             override fun getAxisLabel(value: Float, axis: AxisBase): String {
-                val date = Date(value.toLong())
+                val timestamp = firstTimestamp + (value.toLong() * 1000L)
+                val date = Date(timestamp)
                 val dateTimeFormatter = SimpleDateFormat("HH:mm:ss MM/dd")
                 return dateTimeFormatter.format(date)
             }
         }
-        xAxis.position = XAxis.XAxisPosition.BOTTOM
-        xAxis.granularity = 1000f
-        xAxis.setLabelCount(5, true)
-        xAxis.isGranularityEnabled = true
         xAxis.valueFormatter = xAxisFormatter
-        xAxis.labelRotationAngle = 300f
+
         chart.setBackgroundColor(Color.parseColor("#FFFFFF"))
 
         // Build person count database and DAO
@@ -119,8 +127,12 @@ class MainActivity : AppCompatActivity() {
 
         val personCountObserver = Observer<List<PersonCount>> { data ->
             val entries = mutableListOf<Entry>()
+            firstTimestamp = data.first().time
             for (personCount in data) {
-                entries.add(Entry(personCount.time.toFloat(), personCount.count.toFloat()))
+                // Since Float cannot reliably hold large Unix timestamps,
+                // use an offset based on the first timestamp instead
+                val offset = ((personCount.time - firstTimestamp) / 1000L).toFloat()
+                entries.add(Entry(offset, personCount.count.toFloat()))
             }
             entries.sortWith(EntryXComparator())
             val dataSet = LineDataSet(entries, "People counted")
