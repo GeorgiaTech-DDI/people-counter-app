@@ -4,6 +4,12 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("aws.sdk.kotlin:aws-http:0.21.1-beta")
+    }
+}
+
 android {
     namespace 'vip.smart3makerspaces.peoplecounter'
     compileSdk 33
