@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -30,6 +31,14 @@ import com.amplifyframework.predictions.PredictionsException
 import com.amplifyframework.predictions.aws.AWSPredictionsPlugin
 import com.amplifyframework.predictions.models.IdentifyActionType
 import com.amplifyframework.predictions.result.IdentifyLabelsResult
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.AxisBase
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.utils.EntryXComparator
 import id.zelory.compressor.Compressor
 import id.zelory.compressor.constraint.default
 import id.zelory.compressor.constraint.size
@@ -52,6 +61,7 @@ class MainActivity : AppCompatActivity() {
     private var isCapturing = false
     private lateinit var db: AppDatabase
     private lateinit var personCountDao: PersonCountDao
+    private lateinit var chart: LineChart
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +93,28 @@ class MainActivity : AppCompatActivity() {
             Log.e(TAG, "Could not initialize Amplify", error)
         }
 
+        chart = findViewById(R.id.chart)
+        val xAxis = chart.xAxis
+        val xAxisFormatter = object : ValueFormatter() {
+            override fun getAxisLabel(value: Float, axis: AxisBase): String {
+                val date = Date(value.toLong())
+                val dateTimeFormatter = SimpleDateFormat("HH:mm:ss MM/dd")
+                return dateTimeFormatter.format(date)
+            }
+        }
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.granularity = 1000f
+        xAxis.setLabelCount(5, true)
+        xAxis.isGranularityEnabled = true
+        xAxis.valueFormatter = xAxisFormatter
+        xAxis.labelRotationAngle = 300f
+        xAxis.textColor = Color.parseColor("#FFFFFF")
+
+        val yAxis = chart.axisLeft
+        yAxis.textColor = Color.parseColor("#FFFFFF")
+
+        chart.legend.textColor = Color.parseColor("#FFFFFF")
+
         // Build person count database and DAO
         db = Room.databaseBuilder(
             applicationContext,
@@ -91,7 +123,17 @@ class MainActivity : AppCompatActivity() {
         personCountDao = db.personCountDao()
 
         val personCountObserver = Observer<List<PersonCount>> { data ->
-            Log.i(TAG, "Person count database changed")
+            val entries = mutableListOf<Entry>()
+            for (personCount in data) {
+                entries.add(Entry(personCount.time.toFloat(), personCount.count.toFloat()))
+            }
+            entries.sortWith(EntryXComparator())
+            val dataSet = LineDataSet(entries, "People counted")
+            val lineData = LineData(dataSet)
+            chart.data = lineData
+            chart.data.setValueTextColor(Color.parseColor("#FFFFFF"))
+            chart.invalidate()
+            Log.i(TAG, "Updated line chart")
         }
         personCountDao.getAll().observe(this, personCountObserver)
     }
