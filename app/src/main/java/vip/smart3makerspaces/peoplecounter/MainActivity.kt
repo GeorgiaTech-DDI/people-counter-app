@@ -126,20 +126,22 @@ class MainActivity : AppCompatActivity() {
         personCountDao = db.personCountDao()
 
         val personCountObserver = Observer<List<PersonCount>> { data ->
-            val entries = mutableListOf<Entry>()
-            firstTimestamp = data.first().time
-            for (personCount in data) {
-                // Since Float cannot reliably hold large Unix timestamps,
-                // use an offset based on the first timestamp instead
-                val offset = ((personCount.time - firstTimestamp) / 1000L).toFloat()
-                entries.add(Entry(offset, personCount.count.toFloat()))
+            if (data.isNotEmpty()) {
+                val entries = mutableListOf<Entry>()
+                firstTimestamp = data.first().time
+                for (personCount in data) {
+                    // Since Float cannot reliably hold large Unix timestamps,
+                    // use an offset based on the first timestamp instead
+                    val offset = ((personCount.time - firstTimestamp) / 1000L).toFloat()
+                    entries.add(Entry(offset, personCount.count.toFloat()))
+                }
+                entries.sortWith(EntryXComparator())
+                val dataSet = LineDataSet(entries, "People counted")
+                val lineData = LineData(dataSet)
+                chart.data = lineData
+                chart.invalidate()
+                Log.i(TAG, "Updated line chart")
             }
-            entries.sortWith(EntryXComparator())
-            val dataSet = LineDataSet(entries, "People counted")
-            val lineData = LineData(dataSet)
-            chart.data = lineData
-            chart.invalidate()
-            Log.i(TAG, "Updated line chart")
         }
         personCountDao.getAll().observe(this, personCountObserver)
     }
