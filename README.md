@@ -1,6 +1,13 @@
 # People Counter App
 
-**[Task Board](https://trello.com/b/FXZQRIFY/people-counter-app)**
+## Start here!
+- [ ] Download the Keepass database and ask the team lead for the password
+- [ ] Follow the setup instructions to setup Amplify and Android Studio
+- [ ] Verify that you can run the app in an emulator or Android device
+- [ ] Add yourself to the [Kanban board](https://trello.com/invite/b/1864iZjN/ATTIc5b18ffcf89125d7957e20f84d16dac89FB0D3D5/development-stories)
+
+## Quick links
+- [Kanban board](https://trello.com/b/1864iZjN/development-stories)
 
 ## Setup
 **Note**: These instructions require access to a Keepass
@@ -49,5 +56,5 @@ Your project has been successfully initialized and connected to the cloud!
 ```
 5. Once the environment has been initialized successfully, open the project in Android Studio. You can now run the app in the emulator created previously or on an Android phone with USB debugging enabled.
 
-# Resources
+## Resources
 TODO
