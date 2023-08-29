@@ -18,19 +18,36 @@ database containing credentials for the People Counter project. For more informa
 1. Open Android Studio. Click on `More Actions` or `⋮` and then `Virtual Device Manager`.
 2. Create a new device. Select `Pixel 3` for the device definition and `R` for the system image.
 
-### Configuring Amplify CLI
+### Installing Amplify CLI
 
 1. Install the Amplify CLI using [this guide](https://docs.amplify.aws/cli/start/install/).
-2. Run `amplify configure` and press `Enter` until you are prompted for an access key ID.
+2. Run `amplify configure`. Choose `us-east-1` as the AWS region and press `Enter` until you are prompted for an access key ID.
 3. Enter the access key ID and secret access key from the `AWS Access Key` entry in the Keepass database. The access key ID is the username and the secret access key is the password.
-4. Leave the default region name as `us-east-1` and default output format as `None`.
+4. Keep the profile name as `default` unless you already have a `default` profile that you don't want to override.
 ```
-> aws configure
+> amplify configure
+Follow these steps to set up access to your AWS account:
 
-AWS Access Key ID [None]: <ACCESS KEY ID>
-AWS Secret Access Key [None]: <SECRET ACCESS KEY>
-Default region name [us-east-1]: <ENTER>
-Default output format [None]: <ENTER>
+Sign in to your AWS administrator account:
+https://console.aws.amazon.com/
+Press Enter to continue
+
+Specify the AWS Region
+? region:  us-east-1
+Follow the instructions at
+https://docs.amplify.aws/cli/start/install/#configure-the-amplify-cli
+
+to complete the user creation in the AWS console
+https://console.aws.amazon.com/iamv2/home#/users/create
+Press Enter to continue
+
+Enter the access key of the newly created user:
+? accessKeyId:  <ACCESS KEY ID>
+? secretAccessKey:  <SECRET ACCESS KEY>
+This would update/create the AWS Profile in your local machine
+? Profile Name:  default
+
+Successfully set up the new user.
 ```
 
 ### Running the app
@@ -45,7 +62,7 @@ Default output format [None]: <ENTER>
 Using default provider  awscloudformation
 ? Select the authentication method you want to use: AWS profile
 ```
-4. When prompted for a profile to use, choose `default`.
+4. When prompted for a profile to use, choose `default` or the name of the profile you created previously.
 ```
 ? Please choose the profile you want to use: default
 ⚠️ Failed to resolve AppId. Skipping parameter download.
@@ -54,7 +71,7 @@ Using default provider  awscloudformation
 
 Your project has been successfully initialized and connected to the cloud!
 ```
-5. Once the environment has been initialized successfully, open the project in Android Studio. You can now run the app in the emulator created previously or on an Android phone with USB debugging enabled.
+5. Once the environment has been initialized successfully, open the project in Android Studio. You can now run the app in the emulator or on an Android phone with USB debugging enabled.
 
 ## Resources
 TODO
