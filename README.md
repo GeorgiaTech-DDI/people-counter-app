@@ -57,7 +57,9 @@ Successfully set up the new user.
 ```
 > amplify init
 
-? Enter a name for the environment: dev
+? Do you want to use an existing environment? Yes
+Choose the environment you would like to use:
+❯ dev
 ? Choose your default editor: Android Studio
 Using default provider  awscloudformation
 ? Select the authentication method you want to use: AWS profile
