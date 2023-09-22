@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var captureTimer: Timer
     private var isCapturing = false
     private lateinit var db: AppDatabase
-    private lateinit var personCountDao: PersonCountDao
+    private lateinit var countDao: CountDao
     private lateinit var chart: LineChart
     private var firstTimestamp by Delegates.notNull<Long>()
 
@@ -121,11 +121,11 @@ class MainActivity : AppCompatActivity() {
         // Build person count database and DAO
         db = Room.databaseBuilder(
             applicationContext,
-            AppDatabase::class.java, "person-count-db"
+            AppDatabase::class.java, "people-counter-db"
         ).build()
-        personCountDao = db.personCountDao()
+        countDao = db.countDao()
 
-        val personCountObserver = Observer<List<PersonCount>> { data ->
+        val countObserver = Observer<List<Count>> { data ->
             if (data.isNotEmpty()) {
                 val entries = mutableListOf<Entry>()
                 firstTimestamp = data.first().time
@@ -143,7 +143,7 @@ class MainActivity : AppCompatActivity() {
                 Log.i(TAG, "Updated line chart")
             }
         }
-        personCountDao.getAll().observe(this, personCountObserver)
+        countDao.getAll().observe(this, countObserver)
     }
 
     private suspend fun compressImage(uri: Uri): Bitmap {
@@ -286,8 +286,8 @@ class MainActivity : AppCompatActivity() {
                             Log.i(TAG, "Returned $count from detectPeople")
                             if (count != -1) {  // If detection succeeded
                                 // Add data to person count database
-                                personCountDao.insertAll(
-                                    PersonCount(
+                                countDao.insertAll(
+                                    Count(
                                         timestamp,
                                         count
                                     )
