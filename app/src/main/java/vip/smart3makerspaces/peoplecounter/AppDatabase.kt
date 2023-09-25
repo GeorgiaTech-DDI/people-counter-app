@@ -10,14 +10,14 @@ abstract class AppDatabase : RoomDatabase() {
 
 @Entity(tableName = "count")
 data class Count (
-    @PrimaryKey val time: Long,
+    @PrimaryKey val timestamp: Long,
     @ColumnInfo(name = "count") val count: Int
 )
 
 @Entity(tableName = "person")
 data class Person (
     @PrimaryKey(autoGenerate = true) val id: Int,
-    @ColumnInfo(name = "time") val time: Long,
+    @ColumnInfo(name = "timestamp") val timestamp: Long,
     @ColumnInfo(name = "confidence") val confidence: Double,
     @ColumnInfo(name = "left") val left: Double,
     @ColumnInfo(name = "top") val top: Double,
@@ -27,7 +27,7 @@ data class Person (
 
 @Dao
 interface CountDao {
-    @Query("SELECT * FROM count ORDER BY time")
+    @Query("SELECT * FROM count ORDER BY timestamp")
     fun getAll(): LiveData<List<Count>>
 
     @Insert

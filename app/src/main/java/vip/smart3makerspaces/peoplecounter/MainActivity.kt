@@ -49,7 +49,11 @@ import vip.smart3makerspaces.peoplecounter.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.Timer
+import java.util.TimerTask
+import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.properties.Delegates
@@ -128,11 +132,11 @@ class MainActivity : AppCompatActivity() {
         val countObserver = Observer<List<Count>> { data ->
             if (data.isNotEmpty()) {
                 val entries = mutableListOf<Entry>()
-                firstTimestamp = data.first().time
+                firstTimestamp = data.first().timestamp
                 for (personCount in data) {
                     // Since Float cannot reliably hold large Unix timestamps,
                     // use an offset based on the first timestamp instead
-                    val offset = ((personCount.time - firstTimestamp) / 1000L).toFloat()
+                    val offset = ((personCount.timestamp - firstTimestamp) / 1000L).toFloat()
                     entries.add(Entry(offset, personCount.count.toFloat()))
                 }
                 entries.sortWith(EntryXComparator())
