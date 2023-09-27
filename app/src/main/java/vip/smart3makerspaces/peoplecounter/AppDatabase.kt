@@ -47,6 +47,4 @@ interface PersonDao {
 
     @Delete
     fun delete(person: Person)
-
-
 }
