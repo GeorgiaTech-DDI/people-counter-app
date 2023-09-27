@@ -36,3 +36,15 @@ interface CountDao {
     @Delete
     fun delete(count: Count)
 }
+
+@Dao
+interface PersonDao {
+    @Query("SELECT * FROM person")
+    fun getAll(): LiveData<List<Person>>
+
+    @Insert
+    fun insertAll(vararg person: Person)
+
+    @Delete
+    fun delete(person: Person)
+}
