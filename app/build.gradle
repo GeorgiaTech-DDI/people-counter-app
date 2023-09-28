@@ -68,6 +68,7 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.7.1'
 
     // AWS Amplify dependencies
+    implementation 'com.amplifyframework:core:2.8.0'
     implementation 'com.amplifyframework:core-kotlin:2.8.0'
     implementation 'com.amplifyframework:aws-predictions:2.8.0'
     implementation 'com.amplifyframework:aws-auth-cognito:2.8.0'
