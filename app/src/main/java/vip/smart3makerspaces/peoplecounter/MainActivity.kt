@@ -205,14 +205,14 @@ class MainActivity : AppCompatActivity() {
         val personList = mutableListOf<Person>()
 
         for (label in identifyResult.labels) {
-            // Return the number of people detected
+            // Return a list of people detected
             if (label.name == "Person") {
                 Log.i(TAG, "Detected ${label.boxes.size} person(s)")
 
                 for (box in label.boxes) {
                     val person = Person(
                         timestamp = 0L,
-                        confidence = box.confidence,
+                        confidence = label.confidence,
                         left = box.left,
                         top = box.top,
                         right = box.right,
@@ -221,10 +221,6 @@ class MainActivity : AppCompatActivity() {
                     personList.add(person)
                 }
             }
-        }
-        // Return empty list if no people counted
-        if (personList.isEmpty()) {
-            return emptyList()
         }
 
         return personList
@@ -298,19 +294,17 @@ class MainActivity : AppCompatActivity() {
                             val compressedBitmap = compressImage(it)
 
                             try {
-                                // Send photo to Rekognition to detect number of people
-                                val count = detectPeople(compressedBitmap)
-                                Log.i(TAG, "Returned $count from detectPeople")
-                                if (count != -1) {  // If detection succeeded
-                                    // Add data to person count database
-                                    personCountDao.insertAll(
-                                        PersonCount(
-                                            timestamp,
-                                            count
-                                        )
+                                // Send photo to Rekognition to detect people
+                                val peopleDetected = detectPeople(compressedBitmap)
+                                Log.i(TAG, "Returned list of ${peopleDetected.size} people from detectPeople")
+                                // Add data to count table
+                                countDao.insertAll(
+                                    Count(
+                                        timestamp,
+                                        peopleDetected.size
                                     )
-                                    Log.i(TAG, "Inserted ($timestamp, $count) to database")
-                                }
+                                )
+                                Log.i(TAG, "Inserted ($timestamp, ${peopleDetected.size}) to table")
                             } catch (error: PredictionsException) {
                                 Log.e(TAG, "label detection failed", error)
                             } finally {
