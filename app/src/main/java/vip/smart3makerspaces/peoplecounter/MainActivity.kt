@@ -198,25 +198,36 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun detectPeople(image: Bitmap): Int {
-        try {
-            val result = Amplify.Predictions.identify(IdentifyActionType.DETECT_LABELS, image)
-            val identifyResult = result as IdentifyLabelsResult
+    private suspend fun detectPeople(image: Bitmap): List<Person> {
+        val result = Amplify.Predictions.identify(IdentifyActionType.DETECT_LABELS, image)
+        val identifyResult = result as IdentifyLabelsResult
 
-            for (label in identifyResult.labels) {
-                // Return the number of people detected
-                if (label.name == "Person") {
-                    Log.i(TAG, "Detected ${label.boxes.size} person(s)")
-                    return label.boxes.size
+        val personList = mutableListOf<Person>()
+
+        for (label in identifyResult.labels) {
+            // Return the number of people detected
+            if (label.name == "Person") {
+                Log.i(TAG, "Detected ${label.boxes.size} person(s)")
+
+                for (box in label.boxes) {
+                    val person = Person(
+                        timestamp = 0L,
+                        confidence = box.confidence,
+                        left = box.left,
+                        top = box.top,
+                        right = box.right,
+                        bottom = box.bottom
+                    )
+                    personList.add(person)
                 }
             }
-            return 0
-        } catch (error: PredictionsException) {
-            Log.e(TAG, "Label detection failed", error)
+        }
+        // Return empty list if no people counted
+        if (personList.isEmpty()) {
+            return emptyList()
         }
 
-        // Return -1 if error occurred during label detection
-        return -1
+        return personList
     }
 
     private fun togglePhotoStream() {
@@ -285,21 +296,27 @@ class MainActivity : AppCompatActivity() {
                         output.savedUri?.let {
                             // Compress captured photo
                             val compressedBitmap = compressImage(it)
-                            // Send photo to Rekognition to detect number of people
-                            val count = detectPeople(compressedBitmap)
-                            Log.i(TAG, "Returned $count from detectPeople")
-                            if (count != -1) {  // If detection succeeded
-                                // Add data to person count database
-                                countDao.insertAll(
-                                    Count(
-                                        timestamp,
-                                        count
+
+                            try {
+                                // Send photo to Rekognition to detect number of people
+                                val count = detectPeople(compressedBitmap)
+                                Log.i(TAG, "Returned $count from detectPeople")
+                                if (count != -1) {  // If detection succeeded
+                                    // Add data to person count database
+                                    personCountDao.insertAll(
+                                        PersonCount(
+                                            timestamp,
+                                            count
+                                        )
                                     )
-                                )
-                                Log.i(TAG, "Inserted ($timestamp, $count) to database")
+                                    Log.i(TAG, "Inserted ($timestamp, $count) to database")
+                                }
+                            } catch (error: PredictionsException) {
+                                Log.e(TAG, "label detection failed", error)
+                            } finally {
+                                // Delete captured photo
+                                contentResolver.delete(it, null, null)
                             }
-                            // Delete captured photo
-                            contentResolver.delete(it, null, null)
                         }
                     }
                 }
