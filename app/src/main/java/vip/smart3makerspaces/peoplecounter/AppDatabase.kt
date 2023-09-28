@@ -16,13 +16,13 @@ data class Count (
 
 @Entity(tableName = "person")
 data class Person (
-    @PrimaryKey(autoGenerate = true) val id: Int,
-    @ColumnInfo(name = "timestamp") val timestamp: Long,
-    @ColumnInfo(name = "confidence") val confidence: Double,
-    @ColumnInfo(name = "left") val left: Double,
-    @ColumnInfo(name = "top") val top: Double,
-    @ColumnInfo(name = "right") val right: Double,
-    @ColumnInfo(name = "bottom") val bottom: Double
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @ColumnInfo(name = "timestamp") var timestamp: Long,
+    @ColumnInfo(name = "confidence") val confidence: Float,
+    @ColumnInfo(name = "left") val left: Float,
+    @ColumnInfo(name = "top") val top: Float,
+    @ColumnInfo(name = "right") val right: Float,
+    @ColumnInfo(name = "bottom") val bottom: Float
 )
 
 @Dao
