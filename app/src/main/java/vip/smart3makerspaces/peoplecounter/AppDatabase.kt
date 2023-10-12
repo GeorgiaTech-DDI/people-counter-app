@@ -6,6 +6,7 @@ import androidx.room.*
 @Database(entities = [Count::class, Person::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun countDao(): CountDao
+    abstract fun personDao(): PersonDao
 }
 
 @Entity(tableName = "count")
@@ -31,7 +32,7 @@ interface CountDao {
     fun getAll(): LiveData<List<Count>>
 
     @Insert
-    fun insertAll(vararg counts: Count)
+    fun insertAll(count: Count)
 
     @Delete
     fun delete(count: Count)
@@ -43,7 +44,7 @@ interface PersonDao {
     fun getAll(): LiveData<List<Person>>
 
     @Insert
-    fun insertAll(vararg person: Person)
+    fun insertAll(vararg person: List<Person>)
 
     @Delete
     fun delete(person: Person)
