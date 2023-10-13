@@ -129,6 +129,7 @@ class MainActivity : AppCompatActivity() {
             AppDatabase::class.java, "people-counter-db"
         ).build()
         countDao = db.countDao()
+        personDao = db.personDao()
 
         val countObserver = Observer<List<Count>> { data ->
             if (data.isNotEmpty()) {
@@ -309,7 +310,7 @@ class MainActivity : AppCompatActivity() {
 
 
                                 // Add data to count table
-                                countDao.insertAll(
+                                countDao.insert(
                                     Count(
                                         timestamp,
                                         peopleDetected.size

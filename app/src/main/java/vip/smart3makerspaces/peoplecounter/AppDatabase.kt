@@ -32,7 +32,7 @@ interface CountDao {
     fun getAll(): LiveData<List<Count>>
 
     @Insert
-    fun insertAll(count: Count)
+    fun insert(count: Count)
 
     @Delete
     fun delete(count: Count)
@@ -44,7 +44,7 @@ interface PersonDao {
     fun getAll(): LiveData<List<Person>>
 
     @Insert
-    fun insertAll(vararg person: List<Person>)
+    fun insertAll(persons: List<Person>)
 
     @Delete
     fun delete(person: Person)
