@@ -13,8 +13,14 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.SheetsScopes
+import com.google.api.services.sheets.v4.model.AddSheetRequest
+import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest
+import com.google.api.services.sheets.v4.model.DeleteSheetRequest
+import com.google.api.services.sheets.v4.model.Request
+import com.google.api.services.sheets.v4.model.SheetProperties
 import com.google.api.services.sheets.v4.model.Spreadsheet
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties
+import com.google.api.services.sheets.v4.model.ValueRange
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -78,6 +84,41 @@ class LoginActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         launch(Dispatchers.IO) {
             spreadsheet = service.spreadsheets().create(spreadsheet).execute()
             Log.i("LoginActivity", "ID: ${spreadsheet.spreadsheetId}")
+
+            var requests = mutableListOf<Request>();
+
+            requests.add(Request()
+                .setAddSheet(
+                    AddSheetRequest()
+                        .setProperties(
+                            SheetProperties()
+                                .setTitle("count"))))
+            requests.add(Request()
+                .setAddSheet(
+                    AddSheetRequest()
+                        .setProperties(
+                            SheetProperties()
+                                .setTitle("person"))))
+            requests.add(Request()
+                .setDeleteSheet(
+                    DeleteSheetRequest()
+                        .setSheetId(spreadsheet.sheets.first().properties.sheetId)
+                ))
+
+            val batchUpdateSpreadsheetRequest = BatchUpdateSpreadsheetRequest()
+                .setRequests(requests);
+            service.spreadsheets().batchUpdate(spreadsheet.spreadsheetId, batchUpdateSpreadsheetRequest).execute()
+
+            val countLabels: ValueRange = ValueRange()
+                .setValues(listOf(listOf("timestamp", "count")))
+            val personLabels: ValueRange = ValueRange()
+                .setValues(listOf(listOf("timestamp", "confidence", "left", "top", "right", "bottom")))
+            service.spreadsheets().values().update(spreadsheet.spreadsheetId, "count!A1:B1", countLabels)
+                .setValueInputOption("RAW")
+                .execute()
+            service.spreadsheets().values().update(spreadsheet.spreadsheetId, "person!A1:F1", personLabels)
+                .setValueInputOption("RAW")
+                .execute()
         }
     }
 }
