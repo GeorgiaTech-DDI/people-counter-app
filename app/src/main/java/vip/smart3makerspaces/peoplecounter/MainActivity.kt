@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     private var isCapturing = false
     private lateinit var db: AppDatabase
     private lateinit var countDao: CountDao
+    private lateinit var personDao: PersonDao
     private lateinit var chart: LineChart
     private var firstTimestamp by Delegates.notNull<Long>()
 
@@ -128,6 +129,7 @@ class MainActivity : AppCompatActivity() {
             AppDatabase::class.java, "people-counter-db"
         ).build()
         countDao = db.countDao()
+        personDao = db.personDao()
 
         val countObserver = Observer<List<Count>> { data ->
             if (data.isNotEmpty()) {
@@ -297,8 +299,18 @@ class MainActivity : AppCompatActivity() {
                                 // Send photo to Rekognition to detect people
                                 val peopleDetected = detectPeople(compressedBitmap)
                                 Log.i(TAG, "Returned list of ${peopleDetected.size} people from detectPeople")
+
+                                // Change the timestamp of each detected person to the image timestamp
+                                val timestamp = System.currentTimeMillis();
+                                for (person in peopleDetected) {
+                                    person.timestamp = timestamp;  // This line is added
+                                }
+                                // Use the PersonDao to insert the updated list of entities into the Person table
+                                personDao.insertAll(peopleDetected);
+
+
                                 // Add data to count table
-                                countDao.insertAll(
+                                countDao.insert(
                                     Count(
                                         timestamp,
                                         peopleDetected.size
