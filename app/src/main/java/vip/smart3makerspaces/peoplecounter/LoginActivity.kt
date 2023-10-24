@@ -43,6 +43,7 @@ class LoginActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         cancel()
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_SIGN_IN) {
@@ -58,6 +59,8 @@ class LoginActivity : AppCompatActivity(), CoroutineScope by MainScope() {
                             .setApplicationName(getString(R.string.app_name))
                             .build()
                         createSpreadsheet(service)
+                        val openCameraIntent = Intent(this@LoginActivity, MainActivity::class.java)
+                        this@LoginActivity.startActivity(openCameraIntent)
                     }
                     .addOnFailureListener { e ->
                         Log.e("LoginActivity", e.message!!)
