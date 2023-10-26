@@ -48,6 +48,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.legacy:legacy-support-v4:1.0.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -82,17 +84,19 @@ dependencies {
     // Room database dependencies
     val roomVersion = "2.6.0"
     implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
     // Add support for LiveData
     val lifecycleVersion = "2.6.2"
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
     ksp("androidx.lifecycle:lifecycle-compiler:$lifecycleVersion")
 
     // Add support for Java 8 features
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 
-    // Add support for Google Sheets API
+    // Google Sheets API dependencies
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("com.google.api-client:google-api-client-android:2.2.0") {
         exclude(group = "org.apache.httpcomponents")
@@ -100,4 +104,7 @@ dependencies {
     implementation("com.google.apis:google-api-services-sheets:v4-rev612-1.25.0") {
         exclude(group = "org.apache.httpcomponents")
     }
+
+    // Preferences DataStore dependency
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 }

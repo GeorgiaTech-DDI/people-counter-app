@@ -1,4 +1,4 @@
-package vip.smart3makerspaces.peoplecounter
+package vip.smart3makerspaces.peoplecounter.ui
 
 import android.Manifest
 import android.content.ContentValues
@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -21,9 +22,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import androidx.room.Room
 import com.amplifyframework.AmplifyException
 import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
 import com.amplifyframework.kotlin.core.Amplify
@@ -39,56 +38,83 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.utils.EntryXComparator
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.http.javanet.NetHttpTransport
+import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.sheets.v4.Sheets
+import com.google.api.services.sheets.v4.SheetsScopes
 import id.zelory.compressor.Compressor
 import id.zelory.compressor.constraint.default
 import id.zelory.compressor.constraint.size
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import vip.smart3makerspaces.peoplecounter.databinding.ActivityMainBinding
+import vip.smart3makerspaces.peoplecounter.CounterApplication
+import vip.smart3makerspaces.peoplecounter.R
+import vip.smart3makerspaces.peoplecounter.data.GoogleSheetsRepository
+import vip.smart3makerspaces.peoplecounter.data.Sheet
+import vip.smart3makerspaces.peoplecounter.data.UserPreferencesRepository
+import vip.smart3makerspaces.peoplecounter.data.entity.Count
+import vip.smart3makerspaces.peoplecounter.data.entity.Person
+import vip.smart3makerspaces.peoplecounter.databinding.ActivityRecognitionBinding
 import java.io.File
 import java.io.FileOutputStream
+import java.text.DateFormat.getDateTimeInstance
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import kotlin.properties.Delegates
 
-class MainActivity : AppCompatActivity() {
-    private lateinit var viewBinding: ActivityMainBinding
+class RecognitionActivity : AppCompatActivity() {
+
+    private lateinit var viewBinding: ActivityRecognitionBinding
+    private val recognitionViewModel: RecognitionViewModel by viewModels {
+        RecognitionViewModelFactory((application as CounterApplication).roomRepository)
+    }
+
     private var imageCapture: ImageCapture? = null
-    private lateinit var cameraExecutor: ExecutorService
     private lateinit var captureTimer: Timer
     private var isCapturing = false
-    private lateinit var db: AppDatabase
-    private lateinit var countDao: CountDao
-    private lateinit var personDao: PersonDao
     private lateinit var chart: LineChart
     private var firstTimestamp by Delegates.notNull<Long>()
+    private lateinit var googleSheetsRepository: GoogleSheetsRepository
+    private lateinit var spreadsheetId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewBinding = ActivityMainBinding.inflate(layoutInflater)
+        viewBinding = ActivityRecognitionBinding.inflate(layoutInflater)
         setContentView(viewBinding.root)
 
-        // Request camera permissions
-        if (allPermissionsGranted()) {
-            startCamera()
-        } else {
-            ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
-        }
+        requestCameraPermissions()
+        initializeAmplify()
+        initializeSheetsRepo()
+        initializeChart()
+        setupObservers()
 
         // Set up the listeners for take photo buttons
         viewBinding.imageCaptureButton.setOnClickListener { togglePhotoStream() }
 
-        cameraExecutor = Executors.newSingleThreadExecutor()
+        // Save spreadsheet ID from user preferences
+        lifecycleScope.launch(Dispatchers.Main) {
+            spreadsheetId = UserPreferencesRepository(dataStore).fetchInitialPreferences().spreadsheetId
+        }
+    }
 
-        // Initialize AWS Amplify
+    private fun requestCameraPermissions() {
+        if (allPermissionsGranted()) {
+            startCamera()
+        } else {
+            ActivityCompat.requestPermissions(
+                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+            )
+        }
+    }
+
+    private fun initializeAmplify() {
         try {
             // Add the AWSCognitoAuthPlugin and AWSPredictionsPlugin plugins
             Amplify.addPlugin(AWSCognitoAuthPlugin())
@@ -99,7 +125,9 @@ class MainActivity : AppCompatActivity() {
         } catch (error: AmplifyException) {
             Log.e(TAG, "Could not initialize Amplify", error)
         }
+    }
 
+    private fun initializeChart() {
         chart = findViewById(R.id.chart)
 
         // Disable chart description and legend for cleaner look
@@ -115,41 +143,54 @@ class MainActivity : AppCompatActivity() {
             override fun getAxisLabel(value: Float, axis: AxisBase): String {
                 val timestamp = firstTimestamp + (value.toLong() * 1000L)
                 val date = Date(timestamp)
-                val dateTimeFormatter = SimpleDateFormat("HH:mm:ss MM/dd")
+                val dateTimeFormatter = getDateTimeInstance()
                 return dateTimeFormatter.format(date)
             }
         }
         xAxis.valueFormatter = xAxisFormatter
 
         chart.setBackgroundColor(Color.parseColor("#FFFFFF"))
+    }
 
-        // Build person count database and DAO
-        db = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java, "people-counter-db"
-        ).build()
-        countDao = db.countDao()
-        personDao = db.personDao()
+    private fun initializeSheetsRepo() {
+        val account = GoogleSignIn.getLastSignedInAccount(applicationContext)
 
-        val countObserver = Observer<List<Count>> { data ->
-            if (data.isNotEmpty()) {
-                val entries = mutableListOf<Entry>()
-                firstTimestamp = data.first().timestamp
-                for (personCount in data) {
-                    // Since Float cannot reliably hold large Unix timestamps,
-                    // use an offset based on the first timestamp instead
-                    val offset = ((personCount.timestamp - firstTimestamp) / 1000L).toFloat()
-                    entries.add(Entry(offset, personCount.count.toFloat()))
+        if (account != null) {
+            val scopes = listOf(SheetsScopes.SPREADSHEETS)
+            val credential = GoogleAccountCredential.usingOAuth2(this, scopes)
+            credential.selectedAccount = account.account
+            val jsonFactory = JacksonFactory.getDefaultInstance()
+            val httpTransport = NetHttpTransport()
+            val service = Sheets.Builder(httpTransport, jsonFactory, credential)
+                .setApplicationName(getString(R.string.app_name))
+                .build()
+            googleSheetsRepository = GoogleSheetsRepository(service)
+        } else {
+            Log.e(TAG, "Initializing Google Sheets repo failed")
+        }
+    }
+
+    private fun setupObservers() {
+        recognitionViewModel.allCounts.observe(this) { counts ->
+            counts.let {
+                if (counts.isNotEmpty()) {
+                    val entries = mutableListOf<Entry>()
+                    firstTimestamp = counts.first().timestamp
+                    for (personCount in counts) {
+                        // Since Float cannot reliably hold large Unix timestamps,
+                        // use an offset based on the first timestamp instead
+                        val offset = ((personCount.timestamp - firstTimestamp) / 1000L).toFloat()
+                        entries.add(Entry(offset, personCount.count.toFloat()))
+                    }
+                    entries.sortWith(EntryXComparator())
+                    val dataSet = LineDataSet(entries, "People counted")
+                    val lineData = LineData(dataSet)
+                    chart.data = lineData
+                    chart.invalidate()
+                    Log.i(TAG, "Updated line chart")
                 }
-                entries.sortWith(EntryXComparator())
-                val dataSet = LineDataSet(entries, "People counted")
-                val lineData = LineData(dataSet)
-                chart.data = lineData
-                chart.invalidate()
-                Log.i(TAG, "Updated line chart")
             }
         }
-        countDao.getAll().observe(this, countObserver)
     }
 
     private suspend fun compressImage(uri: Uri): Bitmap {
@@ -160,7 +201,7 @@ class MainActivity : AppCompatActivity() {
             val tempFile = File.createTempFile(
                 UUID.randomUUID().toString(),
                 "",
-                this@MainActivity.cacheDir
+                this@RecognitionActivity.cacheDir
             )
             Log.i(TAG, "Created temp file: ${tempFile.path}")
 
@@ -173,7 +214,7 @@ class MainActivity : AppCompatActivity() {
 
             // Compress the file to AWS Rekognition size limits (5MB)
             val compressedFile = Compressor.compress(
-                this@MainActivity,
+                this@RecognitionActivity,
                 tempFile
             ) {
                 default()
@@ -301,22 +342,37 @@ class MainActivity : AppCompatActivity() {
                                 Log.i(TAG, "Returned list of ${peopleDetected.size} people from detectPeople")
 
                                 // Change the timestamp of each detected person to the image timestamp
-                                val timestamp = System.currentTimeMillis();
                                 for (person in peopleDetected) {
-                                    person.timestamp = timestamp;  // This line is added
+                                    person.timestamp = timestamp
+
+                                    // Use the RecognitionViewModel to add Person to the database
+                                    recognitionViewModel.insertPersonToDatabase(person)
+
+                                    // Append person values to spreadsheet
+                                    val personValues = listOf(
+                                        person.timestamp.toString(),
+                                        person.confidence.toString(),
+                                        person.left.toString(),
+                                        person.top.toString(),
+                                        person.right.toString(),
+                                        person.bottom.toString())
+                                    Log.i(TAG, "Inserted ($timestamp, ${personValues.joinToString()}) to Person table")
+                                    googleSheetsRepository.appendRow(spreadsheetId, Sheet.PERSON.title, personValues)
                                 }
-                                // Use the PersonDao to insert the updated list of entities into the Person table
-                                personDao.insertAll(peopleDetected);
 
-
-                                // Add data to count table
-                                countDao.insert(
-                                    Count(
-                                        timestamp,
-                                        peopleDetected.size
-                                    )
+                                val personCount = Count(
+                                    timestamp,
+                                    peopleDetected.size
                                 )
-                                Log.i(TAG, "Inserted ($timestamp, ${peopleDetected.size}) to table")
+                                // Use the RecognitionViewModel to add Count to the database
+                                recognitionViewModel.insertCountToDatabase(personCount)
+
+                                val countValues = listOf(
+                                    personCount.timestamp.toString(),
+                                    personCount.count.toString()
+                                )
+                                Log.i(TAG, "Inserted (${countValues.joinToString()}}) to Count table")
+                                googleSheetsRepository.appendRow(spreadsheetId, Sheet.COUNT.title, countValues)
                             } catch (error: PredictionsException) {
                                 Log.e(TAG, "label detection failed", error)
                             } finally {
@@ -370,11 +426,6 @@ class MainActivity : AppCompatActivity() {
             baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor.shutdown()
-    }
-
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults:
         IntArray) {
@@ -392,7 +443,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val TAG = "MainActivity"
+        private const val TAG = "RecognitionActivity"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
